@@ -301,10 +301,10 @@
             // --- Materials ---
             const skinMat = new THREE.MeshStandardMaterial({ color: 0xffd3ac, roughness: 0.7 });
             
-            const metalColors = [0x8C7853, 0xB87333, 0xC0C0C0, 0x4A4A4A]; // Brass, Copper, Silver, Iron
-            const fabricColors = [0x5c2e1a, 0x2a3d45, 0x4a412a, 0x6d2932];
-            const beardColors = [0x3d2b1f, 0x111111, 0x9e2b25, 0x808080, 0xffa500];
-            const lensColors = [0x00FFFF, 0x39FF14, 0xFF00FF];
+            const metalColors = [0x8C7853, 0xB87333, 0xC0C0C0, 0x4A4A4A, 0xDAA520, 0x6C757D]; // Brass, Copper, Silver, Iron, Gold, Steel
+            const fabricColors = [0x5c2e1a, 0x2a3d45, 0x4a412a, 0x6d2932, 0x343a40, 0x6f4e37]; // Added Dark Grey, Coffee Brown
+            const beardColors = [0x3d2b1f, 0x111111, 0x9e2b25, 0x808080, 0xffa500, 0xf5f5dc, 0xd2b48c]; // Added White, Tan
+            const lensColors = [0x00FFFF, 0x39FF14, 0xFF00FF, 0xFF4500, 0x9400D3]; // Added OrangeRed, DarkViolet
 
             const primaryMetalMat = new THREE.MeshStandardMaterial({ color: metalColors[Math.floor(R(1) * metalColors.length)], roughness: 0.3, metalness: 0.8 });
             const secondaryMetalMat = new THREE.MeshStandardMaterial({ color: metalColors[Math.floor(R(2) * metalColors.length)], roughness: 0.4, metalness: 0.7 });
@@ -328,7 +328,7 @@
             group.add(head);
 
             // --- Beard ---
-            const beardType = Math.floor(R(6) * 4);
+            const beardType = Math.floor(R(6) * 5); // Increased to 5 types
             const beardGroup = new THREE.Group();
             if (beardType === 0) { // Long single braid
                 const beardGeo = new THREE.ConeGeometry(0.3, 0.8, 8);
@@ -350,18 +350,23 @@
                 braid2.position.set(-0.15, -0.4, 0.1);
                 braid2.rotation.z = 0.1;
                 beardGroup.add(braid1, braid2);
-            } else { // Moustache
+            } else if (beardType === 3) { // Moustache
                 const stacheGeo = new THREE.TorusGeometry(0.1, 0.05, 8, 16, Math.PI);
                 const stache = new THREE.Mesh(stacheGeo, beardMat);
                 stache.position.set(0, -0.1, 0.3);
                 stache.rotation.x = -0.2;
                 beardGroup.add(stache);
+            } else { // NEW: Chin Curtain
+                const chinGeo = new THREE.BoxGeometry(0.4, 0.2, 0.1);
+                const chinBeard = new THREE.Mesh(chinGeo, beardMat);
+                chinBeard.position.set(0, -0.25, 0.25);
+                beardGroup.add(chinBeard);
             }
             beardGroup.traverse(child => child.castShadow = true);
             head.add(beardGroup);
 
             // --- Helmet & Goggles ---
-            const helmetType = Math.floor(R(7) * 3);
+            const helmetType = Math.floor(R(7) * 4); // Increased to 4 types
             const helmetGroup = new THREE.Group();
             const helmetGeo = new THREE.SphereGeometry(0.38, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
             const helmet = new THREE.Mesh(helmetGeo, primaryMetalMat);
@@ -381,6 +386,13 @@
                 gauge.rotation.z = Math.PI/4;
                 gauge.castShadow = true;
                 helmetGroup.add(gauge);
+            } else if (helmetType === 3) { // NEW: With Cog
+                const cogGeo = new THREE.TorusGeometry(0.1, 0.04, 3, 6);
+                const cog = new THREE.Mesh(cogGeo, secondaryMetalMat);
+                cog.position.set(0.25, 0.1, 0);
+                cog.rotation.y = Math.PI / 2;
+                cog.castShadow = true;
+                helmetGroup.add(cog);
             }
             
             // Goggles
@@ -421,8 +433,26 @@
 
             head.add(helmetGroup);
 
+            // --- NEW: Pauldrons ---
+            if (R(12) > 0.4) { // 60% chance of pauldrons
+                const pauldronGeo = new THREE.SphereGeometry(0.2, 16, 8, 0, Math.PI);
+                const pauldronMat = new THREE.MeshStandardMaterial({ color: metalColors[Math.floor(R(13) * metalColors.length)], roughness: 0.3, metalness: 0.8 });
+                
+                const pauldronL = new THREE.Mesh(pauldronGeo, pauldronMat);
+                pauldronL.position.set(0.5, body.position.y + dwarfHeight / 2 - 0.2, 0);
+                pauldronL.rotation.z = Math.PI / 2;
+                pauldronL.castShadow = true;
+                group.add(pauldronL);
+
+                const pauldronR = new THREE.Mesh(pauldronGeo, pauldronMat);
+                pauldronR.position.set(-0.5, body.position.y + dwarfHeight / 2 - 0.2, 0);
+                pauldronR.rotation.z = -Math.PI / 2;
+                pauldronR.castShadow = true;
+                group.add(pauldronR);
+            }
+
             // --- Tool ---
-            const toolType = Math.floor(R(11) * 3);
+            const toolType = Math.floor(R(11) * 4); // Increased to 4 types
             const toolGroup = new THREE.Group();
             const handleGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.8, 8);
             const handle = new THREE.Mesh(handleGeo, fabricMat);
@@ -442,12 +472,28 @@
                 hammerHead.position.y = 0.3;
                 hammerHead.castShadow = true;
                 toolGroup.add(hammerHead);
-            } else { // Wrench
+            } else if (toolType === 2) { // Wrench
                 const wrenchHeadGeo = new THREE.BoxGeometry(0.3, 0.15, 0.1);
                 const wrenchHead = new THREE.Mesh(wrenchHeadGeo, primaryMetalMat);
                 wrenchHead.position.set(0.1, 0.35, 0);
                 wrenchHead.castShadow = true;
                 toolGroup.add(wrenchHead);
+            } else { // NEW: Pickaxe
+                const pickSpikeGeo = new THREE.ConeGeometry(0.08, 0.4, 8);
+                const spike1 = new THREE.Mesh(pickSpikeGeo, primaryMetalMat);
+                spike1.position.set(0.2, 0.3, 0);
+                spike1.rotation.z = -Math.PI / 2;
+                spike1.castShadow = true;
+                toolGroup.add(spike1);
+                const spike2 = new THREE.Mesh(pickSpikeGeo, primaryMetalMat);
+                spike2.position.set(-0.2, 0.3, 0);
+                spike2.rotation.z = Math.PI / 2;
+                toolGroup.add(spike2);
+                const mountGeo = new THREE.BoxGeometry(0.15, 0.15, 0.15);
+                const mount = new THREE.Mesh(mountGeo, primaryMetalMat);
+                mount.position.y = 0.3;
+                mount.castShadow = true;
+                toolGroup.add(mount);
             }
             
             toolGroup.position.set(0.6, 0.8, 0.1);
