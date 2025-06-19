@@ -113,6 +113,14 @@
                 </div>
             </div>
              <p id="message-box" class="text-center text-amber-200 mt-4 h-6"></p>
+             
+             <!-- Trait Manifest -->
+            <div id="trait-manifest-container" class="mt-4 hidden">
+                <h3 class="font-header text-xl text-amber-300 mb-2 border-b-2 border-amber-600/50 pb-1 text-center">Trait Manifest</h3>
+                <ul id="trait-list" class="text-amber-100/90 space-y-1 text-sm grid grid-cols-2 gap-x-4">
+                    <!-- Traits will be populated here by JS -->
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -136,6 +144,8 @@
         const nftBtn = document.getElementById('nft-btn');
         const messageBox = document.getElementById('message-box');
         const loadingOverlay = document.getElementById('loading-overlay');
+        const traitManifestContainer = document.getElementById('trait-manifest-container');
+        const traitList = document.getElementById('trait-list');
         
         let scene, camera, renderer, controls, dwarfGroup;
         let connectedWalletAddress = null;
@@ -275,8 +285,11 @@
                 if (dwarfGroup) {
                     scene.remove(dwarfGroup);
                 }
-                dwarfGroup = createDwarf(connectedWalletAddress);
+                const dwarfResult = createDwarf(connectedWalletAddress);
+                dwarfGroup = dwarfResult.group;
                 scene.add(dwarfGroup);
+                
+                displayTraits(dwarfResult.traits);
                 
                 camera.position.set(0, 1.5, 8);
                 controls.target.set(0, 1, 0);
@@ -292,24 +305,51 @@
             displayMessage("Minting on Magic Eden requires 500,000+ $DWARVES.", true);
         });
 
+        function displayTraits(traits) {
+            traitList.innerHTML = ''; // Clear previous traits
+            for (const [key, value] of Object.entries(traits)) {
+                if (value) { // Only display if a value is set
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span class="font-bold text-amber-300/80">${key}:</span> ${value}`;
+                    traitList.appendChild(li);
+                }
+            }
+            traitManifestContainer.style.display = 'block';
+        }
+
         function createDwarf(walletAddress) {
             const seed = simpleHash(walletAddress);
             let R = (s) => seededRandom(seed + s); // Create different random streams
-
+            const traits = {};
             const group = new THREE.Group();
 
             // --- Materials ---
             const skinMat = new THREE.MeshStandardMaterial({ color: 0xffd3ac, roughness: 0.7 });
             
-            const metalColors = [0x8C7853, 0xB87333, 0xC0C0C0, 0x4A4A4A, 0xDAA520, 0x6C757D]; // Brass, Copper, Silver, Iron, Gold, Steel
-            const fabricColors = [0x5c2e1a, 0x2a3d45, 0x4a412a, 0x6d2932, 0x343a40, 0x6f4e37]; // Added Dark Grey, Coffee Brown
-            const beardColors = [0x3d2b1f, 0x111111, 0x9e2b25, 0x808080, 0xffa500, 0xf5f5dc, 0xd2b48c]; // Added White, Tan
-            const lensColors = [0x00FFFF, 0x39FF14, 0xFF00FF, 0xFF4500, 0x9400D3]; // Added OrangeRed, DarkViolet
+            const metalColorMap = { 0x8C7853: 'Brass', 0xB87333: 'Copper', 0xC0C0C0: 'Silver', 0x4A4A4A: 'Iron', 0xDAA520: 'Gold', 0x6C757D: 'Steel' };
+            const fabricColorMap = { 0x5c2e1a: 'Brown', 0x2a3d45: 'Blue', 0x4a412a: 'Green', 0x6d2932: 'Red', 0x343a40: 'Grey', 0x6f4e37: 'Coffee' };
+            const beardColorMap = { 0x3d2b1f: 'Brown', 0x111111: 'Black', 0x9e2b25: 'Red', 0x808080: 'Grey', 0xffa500: 'Blonde', 0xf5f5dc: 'White', 0xd2b48c: 'Tan'};
+            const lensColorMap = { 0x00FFFF: 'Cyan', 0x39FF14: 'Neon Green', 0xFF00FF: 'Magenta', 0xFF4500: 'OrangeRed', 0x9400D3: 'Violet' };
 
-            const primaryMetalMat = new THREE.MeshStandardMaterial({ color: metalColors[Math.floor(R(1) * metalColors.length)], roughness: 0.3, metalness: 0.8 });
-            const secondaryMetalMat = new THREE.MeshStandardMaterial({ color: metalColors[Math.floor(R(2) * metalColors.length)], roughness: 0.4, metalness: 0.7 });
-            const fabricMat = new THREE.MeshStandardMaterial({ color: fabricColors[Math.floor(R(3) * fabricColors.length)], roughness: 0.9 });
-            const beardMat = new THREE.MeshStandardMaterial({ color: beardColors[Math.floor(R(4) * beardColors.length)], roughness: 0.8 });
+            const metalColors = Object.keys(metalColorMap).map(Number);
+            const fabricColors = Object.keys(fabricColorMap).map(Number);
+            const beardColors = Object.keys(beardColorMap).map(Number);
+            const lensColors = Object.keys(lensColorMap).map(Number);
+
+            const primaryMetalColor = metalColors[Math.floor(R(1) * metalColors.length)];
+            const secondaryMetalColor = metalColors[Math.floor(R(2) * metalColors.length)];
+            const fabricColor = fabricColors[Math.floor(R(3) * fabricColors.length)];
+            const beardColor = beardColors[Math.floor(R(4) * beardColors.length)];
+            
+            traits['Primary Metal'] = metalColorMap[primaryMetalColor];
+            traits['Secondary Metal'] = secondaryMetalColor === primaryMetalColor ? 'Matched' : metalColorMap[secondaryMetalColor];
+            traits['Fabric'] = fabricColorMap[fabricColor];
+            traits['Beard Color'] = beardColorMap[beardColor];
+
+            const primaryMetalMat = new THREE.MeshStandardMaterial({ color: primaryMetalColor, roughness: 0.3, metalness: 0.8 });
+            const secondaryMetalMat = new THREE.MeshStandardMaterial({ color: secondaryMetalColor, roughness: 0.4, metalness: 0.7 });
+            const fabricMat = new THREE.MeshStandardMaterial({ color: fabricColor, roughness: 0.9 });
+            const beardMat = new THREE.MeshStandardMaterial({ color: beardColor, roughness: 0.8 });
             
             const dwarfHeight = 0.9 + R(5) * 0.2;
 
@@ -331,17 +371,20 @@
             const beardType = Math.floor(R(6) * 5); // Increased to 5 types
             const beardGroup = new THREE.Group();
             if (beardType === 0) { // Long single braid
+                traits.Beard = 'Long Braid';
                 const beardGeo = new THREE.ConeGeometry(0.3, 0.8, 8);
                 const beard = new THREE.Mesh(beardGeo, beardMat);
                 beard.position.set(0, -0.4, 0.1);
                 beardGroup.add(beard);
             } else if (beardType === 1) { // Bushy
+                traits.Beard = 'Bushy';
                 const beardGeo = new THREE.SphereGeometry(0.3, 8, 8);
                 const beard = new THREE.Mesh(beardGeo, beardMat);
                 beard.position.set(0, -0.2, 0.15);
                 beard.scale.set(1.2, 0.9, 1.2);
                 beardGroup.add(beard);
             } else if (beardType === 2) { // Twin braids
+                traits.Beard = 'Twin Braids';
                 const braidGeo = new THREE.CylinderGeometry(0.08, 0.05, 0.6, 6);
                 const braid1 = new THREE.Mesh(braidGeo, beardMat);
                 braid1.position.set(0.15, -0.4, 0.1);
@@ -351,12 +394,14 @@
                 braid2.rotation.z = 0.1;
                 beardGroup.add(braid1, braid2);
             } else if (beardType === 3) { // Moustache
+                traits.Beard = 'Moustache';
                 const stacheGeo = new THREE.TorusGeometry(0.1, 0.05, 8, 16, Math.PI);
                 const stache = new THREE.Mesh(stacheGeo, beardMat);
                 stache.position.set(0, -0.1, 0.3);
                 stache.rotation.x = -0.2;
                 beardGroup.add(stache);
             } else { // NEW: Chin Curtain
+                traits.Beard = 'Chin Curtain';
                 const chinGeo = new THREE.BoxGeometry(0.4, 0.2, 0.1);
                 const chinBeard = new THREE.Mesh(chinGeo, beardMat);
                 chinBeard.position.set(0, -0.25, 0.25);
@@ -374,12 +419,14 @@
             helmetGroup.add(helmet);
 
             if(helmetType === 1){ // With Smokestack
+                traits.Accessory = 'Smokestack';
                 const stackGeo = new THREE.CylinderGeometry(0.05, 0.07, 0.3, 8);
                 const stack = new THREE.Mesh(stackGeo, secondaryMetalMat);
                 stack.position.set(0.2, 0.2, 0);
                 stack.castShadow = true;
                 helmetGroup.add(stack);
             } else if (helmetType === 2) { // With Pressure Gauge
+                traits.Accessory = 'Pressure Gauge';
                 const gaugeGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.05, 16);
                 const gauge = new THREE.Mesh(gaugeGeo, secondaryMetalMat);
                 gauge.position.set(-0.2, 0.1, 0.1);
@@ -387,6 +434,7 @@
                 gauge.castShadow = true;
                 helmetGroup.add(gauge);
             } else if (helmetType === 3) { // NEW: With Cog
+                traits.Accessory = 'Side Cog';
                 const cogGeo = new THREE.TorusGeometry(0.1, 0.04, 3, 6);
                 const cog = new THREE.Mesh(cogGeo, secondaryMetalMat);
                 cog.position.set(0.25, 0.1, 0);
@@ -399,6 +447,7 @@
             if (R(8) > 0.3) {
                 const goggleGroup = new THREE.Group();
                 const lensColor = lensColors[Math.floor(R(9) * lensColors.length)];
+                traits['Lens Color'] = lensColorMap[lensColor];
                 const lensMat = new THREE.MeshStandardMaterial({ color: lensColor, roughness: 0.1, transparent: true, opacity: 0.6});
                 
                 const lensGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.08, 16);
@@ -423,10 +472,12 @@
                 goggleGroup.position.set(0, 0.1, 0.35);
 
                 if (R(10) > 0.5) { // Goggles on helmet
+                    traits.Goggles = 'On Helmet';
                     goggleGroup.position.set(0, 0.2, 0);
                     goggleGroup.scale.set(1.2, 1.2, 1.2);
                     helmetGroup.add(goggleGroup);
                 } else { // Goggles on eyes
+                    traits.Goggles = 'On Eyes';
                     head.add(goggleGroup);
                 }
             }
@@ -435,8 +486,11 @@
 
             // --- NEW: Pauldrons ---
             if (R(12) > 0.4) { // 60% chance of pauldrons
+                const pauldronMatColor = metalColors[Math.floor(R(13) * metalColors.length)];
+                traits['Pauldron Metal'] = metalColorMap[pauldronMatColor];
+                const pauldronMat = new THREE.MeshStandardMaterial({ color: pauldronMatColor, roughness: 0.3, metalness: 0.8 });
+                
                 const pauldronGeo = new THREE.SphereGeometry(0.2, 16, 8, 0, Math.PI);
-                const pauldronMat = new THREE.MeshStandardMaterial({ color: metalColors[Math.floor(R(13) * metalColors.length)], roughness: 0.3, metalness: 0.8 });
                 
                 const pauldronL = new THREE.Mesh(pauldronGeo, pauldronMat);
                 pauldronL.position.set(0.5, body.position.y + dwarfHeight / 2 - 0.2, 0);
@@ -460,6 +514,7 @@
             toolGroup.add(handle);
 
             if (toolType === 0) { // Gear-Axe
+                traits.Tool = 'Gear-Axe';
                 const axeHeadGeo = new THREE.TorusGeometry(0.25, 0.08, 8, 6, Math.PI);
                 const axeHead = new THREE.Mesh(axeHeadGeo, primaryMetalMat);
                 axeHead.position.y = 0.3;
@@ -467,18 +522,21 @@
                 axeHead.castShadow = true;
                 toolGroup.add(axeHead);
             } else if (toolType === 1) { // Steam-Hammer
+                traits.Tool = 'Steam-Hammer';
                 const hammerHeadGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
                 const hammerHead = new THREE.Mesh(hammerHeadGeo, primaryMetalMat);
                 hammerHead.position.y = 0.3;
                 hammerHead.castShadow = true;
                 toolGroup.add(hammerHead);
             } else if (toolType === 2) { // Wrench
+                traits.Tool = 'Wrench';
                 const wrenchHeadGeo = new THREE.BoxGeometry(0.3, 0.15, 0.1);
                 const wrenchHead = new THREE.Mesh(wrenchHeadGeo, primaryMetalMat);
                 wrenchHead.position.set(0.1, 0.35, 0);
                 wrenchHead.castShadow = true;
                 toolGroup.add(wrenchHead);
             } else { // NEW: Pickaxe
+                traits.Tool = 'Pickaxe';
                 const pickSpikeGeo = new THREE.ConeGeometry(0.08, 0.4, 8);
                 const spike1 = new THREE.Mesh(pickSpikeGeo, primaryMetalMat);
                 spike1.position.set(0.2, 0.3, 0);
@@ -487,7 +545,6 @@
                 toolGroup.add(spike1);
                 const spike2 = new THREE.Mesh(pickSpikeGeo, primaryMetalMat);
                 spike2.position.set(-0.2, 0.3, 0);
-                spike2.rotation.z = Math.PI / 2;
                 toolGroup.add(spike2);
                 const mountGeo = new THREE.BoxGeometry(0.15, 0.15, 0.15);
                 const mount = new THREE.Mesh(mountGeo, primaryMetalMat);
@@ -501,7 +558,7 @@
             toolGroup.scale.set(0.8, 0.8, 0.8);
             group.add(toolGroup);
 
-            return group;
+            return { group, traits };
         }
 
         init();
