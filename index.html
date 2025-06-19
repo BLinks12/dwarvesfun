@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$DWARVES - Forge Your Unique Dwarf</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'EB Garamond', serif;
+            background-color: #1a1a1a;
+            background-image: 
+                radial-gradient(circle at 25px 25px, rgba(255, 255, 255, 0.05) 2%, transparent 0%),
+                radial-gradient(circle at 75px 75px, rgba(255, 255, 255, 0.05) 2%, transparent 0%);
+            background-size: 100px 100px;
+            color: #e0e0e0;
+        }
+        .font-header {
+            font-family: 'Cinzel Decorative', serif;
+        }
+        .card {
+            background-color: rgba(40, 30, 20, 0.6);
+            border: 2px solid #b48c5a;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px rgba(212, 165, 96, 0.3);
+        }
+        .btn {
+            background: linear-gradient(145deg, #d4a560, #b48c5a);
+            color: #2c1d0d;
+            font-family: 'Cinzel Decorative', serif;
+            font-weight: 700;
+            border: 2px solid #e0c4a0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 -2px 2px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(212, 165, 96, 0.5), inset 0 -2px 2px rgba(0,0,0,0.3);
+        }
+        .btn:disabled {
+            background: #5a4c3a;
+            color: #2c1d0d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .btn-secondary {
+             background: transparent;
+             border: 2px solid #b48c5a;
+             color: #b48c5a;
+        }
+         .btn-secondary:hover:not(:disabled) {
+            background: rgba(180, 140, 90, 0.2);
+            color: #d4a560;
+        }
+
+        #dwarf-canvas-container {
+            cursor: grab;
+            min-height: 400px;
+            background: radial-gradient(circle, rgba(60, 50, 40, 0.8) 0%, rgba(30, 20, 10, 0.8) 100%);
+            border: 4px ridge #b48c5a;
+        }
+         #dwarf-canvas-container:active {
+            cursor: grabbing;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-8">
+        
+        <!-- Left Column: Lore & Info -->
+        <div class="lg:col-span-2 space-y-8">
+            <div class="card p-6 rounded-lg text-center">
+                <h1 class="font-header text-4xl text-amber-300">$DWARVES</h1>
+                <p class="text-amber-100 mt-2 text-lg">Your On-Chain Identity, Forged in Code.</p>
+            </div>
+            
+            <div class="card p-6 rounded-lg">
+                <h2 class="font-header text-2xl text-amber-300 mb-4 border-b-2 border-amber-600 pb-2">Your Unique Dwarf</h2>
+                <p class="text-base text-amber-100/90 leading-relaxed">
+                    This is more than a token. It's proof of your place in the Cogwork Mines. The true magic of **$DWARVES** is the ability to forge a unique Steampunk Dwarf, inextricably linked to your wallet. 
+                    <br><br>
+                    Your wallet address is the secret blueprint, the one-of-a-kind schematic used at the decentralized forges. No two dwarves are alike, just as no two builders are the same. This is your digital effigy, a symbol of your stake in the future we're building.
+                    <br><br>
+                    Connect your wallet, stoke the forge, and reveal the dwarf that only you could create.
+                </p>
+            </div>
+        </div>
+
+        <!-- Right Column: Generator -->
+        <div class="lg:col-span-3 card p-6 rounded-lg">
+            <h2 class="font-header text-3xl text-amber-300 mb-4 text-center">The Forge</h2>
+             <div class="w-full mb-4">
+                <button id="connect-wallet-btn" class="btn w-full px-8 py-3 rounded-md text-xl">Connect Phantom Wallet</button>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                <button id="generate-btn" class="btn flex-grow px-8 py-3 rounded-md text-xl" disabled>Forge My Dwarf</button>
+                <button id="nft-btn" class="btn btn-secondary flex-grow px-8 py-3 rounded-md text-xl" disabled>NFT Your Dwarf</button>
+            </div>
+            <div id="dwarf-canvas-container" class="w-full h-96 md:h-[500px] rounded-lg relative">
+                 <div id="loading-overlay" class="absolute inset-0 bg-black/50 flex-col items-center justify-center hidden text-amber-200">
+                    <div class="w-16 h-16 border-4 border-t-amber-400 border-r-amber-400 border-b-amber-400/30 border-l-amber-400/30 rounded-full animate-spin"></div>
+                    <p class="mt-4 font-header text-xl">Forging in Progress...</p>
+                </div>
+            </div>
+             <p id="message-box" class="text-center text-amber-200 mt-4 h-6"></p>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Basic Setup ---
+        const container = document.getElementById('dwarf-canvas-container');
+        const connectWalletBtn = document.getElementById('connect-wallet-btn');
+        const generateBtn = document.getElementById('generate-btn');
+        const nftBtn = document.getElementById('nft-btn');
+        const messageBox = document.getElementById('message-box');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        
+        let scene, camera, renderer, controls, dwarfGroup;
+        let connectedWalletAddress = null;
+
+        // --- Hashing function for pseudo-randomness from wallet address ---
+        function simpleHash(str) {
+            let hash = 0;
+            if (!str) return hash;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash |= 0; // Convert to 32bit integer
+            }
+            return hash;
+        }
+
+        function seededRandom(seed) {
+            let x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // --- Phantom Wallet Logic ---
+        const getProvider = () => {
+            if ('phantom' in window) {
+                const provider = window.phantom?.solana;
+                if (provider?.isPhantom) {
+                    return provider;
+                }
+            }
+            // If phantom is not installed, redirect to their website
+            window.open('https://phantom.app/', '_blank');
+            return null;
+        };
+
+        connectWalletBtn.addEventListener('click', async () => {
+            const provider = getProvider();
+            if (!provider) {
+                displayMessage("Phantom Wallet not found!");
+                return;
+            }
+            try {
+                const resp = await provider.connect();
+                connectedWalletAddress = resp.publicKey.toString();
+                displayMessage(`Wallet Connected: ${connectedWalletAddress.substring(0, 4)}...${connectedWalletAddress.substring(connectedWalletAddress.length - 4)}`);
+                connectWalletBtn.textContent = 'Wallet Connected';
+                connectWalletBtn.disabled = true;
+                generateBtn.disabled = false;
+            } catch (err) {
+                displayMessage("Wallet connection cancelled.");
+                console.error("Wallet connection error:", err);
+            }
+        });
+
+        // --- Main App ---
+        function init() {
+            scene = new THREE.Scene();
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 1.5, 8);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, 1, 0);
+            controls.minDistance = 4;
+            controls.maxDistance = 15;
+            controls.maxPolarAngle = Math.PI / 1.8;
+
+            const ambientLight = new THREE.AmbientLight(0xffeebb, 0.7);
+            scene.add(ambientLight);
+            const keyLight = new THREE.DirectionalLight(0xffeebb, 1.5);
+            keyLight.position.set(-5, 5, 5);
+            keyLight.castShadow = true;
+            keyLight.shadow.mapSize.width = 2048;
+            keyLight.shadow.mapSize.height = 2048;
+            scene.add(keyLight);
+            const fillLight = new THREE.DirectionalLight(0xaaccff, 0.5);
+            fillLight.position.set(5, 2, 3);
+            scene.add(fillLight);
+            const rimLight = new THREE.DirectionalLight(0xff8844, 1.0);
+            rimLight.position.set(2, 3, -5);
+            scene.add(rimLight);
+
+            const groundGeo = new THREE.CylinderGeometry(4, 4, 0.2, 64);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x332211, roughness: 0.8, metalness: 0.2 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.position.y = -0.1;
+            ground.receiveShadow = true;
+            scene.add(ground);
+            
+            window.addEventListener('resize', onWindowResize, false);
+            animate();
+            displayMessage("Connect your wallet to begin forging.");
+        }
+
+        function onWindowResize() {
+            if (!container || !renderer) return;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            if (dwarfGroup) {
+                dwarfGroup.rotation.y += 0.001;
+                dwarfGroup.position.y = Math.sin(Date.now() * 0.001) * 0.025;
+            }
+            renderer.render(scene, camera);
+        }
+        
+        function displayMessage(text, isError = false) {
+             messageBox.textContent = text;
+             messageBox.style.color = isError ? '#ff6b6b' : '#e0c4a0';
+        }
+
+        // --- Dwarf Generation ---
+        generateBtn.addEventListener('click', () => {
+            if (!connectedWalletAddress) {
+                displayMessage("Please connect your wallet first!", true);
+                return;
+            }
+            
+            loadingOverlay.style.display = 'flex';
+            displayMessage("Heating the crucible...");
+            nftBtn.disabled = true;
+
+            setTimeout(() => {
+                if (dwarfGroup) {
+                    scene.remove(dwarfGroup);
+                }
+                dwarfGroup = createDwarf(connectedWalletAddress);
+                scene.add(dwarfGroup);
+                
+                camera.position.set(0, 1.5, 8);
+                controls.target.set(0, 1, 0);
+                
+                displayMessage(`Behold! The dwarf forged for your wallet!`);
+                loadingOverlay.style.display = 'none';
+                nftBtn.disabled = false;
+            }, 1500); // Simulate forging time
+        });
+        
+        // --- NFT Button Logic ---
+        nftBtn.addEventListener('click', () => {
+            displayMessage("Only available for users that hold +500,000 $DWARVES.", true);
+        });
+
+        function createDwarf(walletAddress) {
+            const seed = simpleHash(walletAddress);
+            let R = (s) => seededRandom(seed + s); // Create different random streams
+
+            const group = new THREE.Group();
+
+            // --- Materials ---
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xffd3ac, roughness: 0.7 });
+            
+            const metalColors = [0x8C7853, 0xB87333, 0xC0C0C0, 0x4A4A4A]; // Brass, Copper, Silver, Iron
+            const fabricColors = [0x5c2e1a, 0x2a3d45, 0x4a412a, 0x6d2932];
+            const beardColors = [0x3d2b1f, 0x111111, 0x9e2b25, 0x808080, 0xffa500];
+            const lensColors = [0x00FFFF, 0x39FF14, 0xFF00FF];
+
+            const primaryMetalMat = new THREE.MeshStandardMaterial({ color: metalColors[Math.floor(R(1) * metalColors.length)], roughness: 0.3, metalness: 0.8 });
+            const secondaryMetalMat = new THREE.MeshStandardMaterial({ color: metalColors[Math.floor(R(2) * metalColors.length)], roughness: 0.4, metalness: 0.7 });
+            const fabricMat = new THREE.MeshStandardMaterial({ color: fabricColors[Math.floor(R(3) * fabricColors.length)], roughness: 0.9 });
+            const beardMat = new THREE.MeshStandardMaterial({ color: beardColors[Math.floor(R(4) * beardColors.length)], roughness: 0.8 });
+            
+            const dwarfHeight = 0.9 + R(5) * 0.2;
+
+            // --- Body ---
+            const bodyGeo = new THREE.CylinderGeometry(0.5, 0.4, dwarfHeight, 16);
+            const body = new THREE.Mesh(bodyGeo, fabricMat);
+            body.position.y = dwarfHeight / 2 + 0.1;
+            body.castShadow = true;
+            group.add(body);
+
+            // --- Head ---
+            const headGeo = new THREE.SphereGeometry(0.35, 32, 32);
+            const head = new THREE.Mesh(headGeo, skinMat);
+            head.position.y = body.position.y + dwarfHeight / 2 + 0.25;
+            head.castShadow = true;
+            group.add(head);
+
+            // --- Beard ---
+            const beardType = Math.floor(R(6) * 4);
+            const beardGroup = new THREE.Group();
+            if (beardType === 0) { // Long single braid
+                const beardGeo = new THREE.ConeGeometry(0.3, 0.8, 8);
+                const beard = new THREE.Mesh(beardGeo, beardMat);
+                beard.position.set(0, -0.4, 0.1);
+                beardGroup.add(beard);
+            } else if (beardType === 1) { // Bushy
+                const beardGeo = new THREE.SphereGeometry(0.3, 8, 8);
+                const beard = new THREE.Mesh(beardGeo, beardMat);
+                beard.position.set(0, -0.2, 0.15);
+                beard.scale.set(1.2, 0.9, 1.2);
+                beardGroup.add(beard);
+            } else if (beardType === 2) { // Twin braids
+                const braidGeo = new THREE.CylinderGeometry(0.08, 0.05, 0.6, 6);
+                const braid1 = new THREE.Mesh(braidGeo, beardMat);
+                braid1.position.set(0.15, -0.4, 0.1);
+                braid1.rotation.z = -0.1;
+                const braid2 = new THREE.Mesh(braidGeo, beardMat);
+                braid2.position.set(-0.15, -0.4, 0.1);
+                braid2.rotation.z = 0.1;
+                beardGroup.add(braid1, braid2);
+            } else { // Moustache
+                const stacheGeo = new THREE.TorusGeometry(0.1, 0.05, 8, 16, Math.PI);
+                const stache = new THREE.Mesh(stacheGeo, beardMat);
+                stache.position.set(0, -0.1, 0.3);
+                stache.rotation.x = -0.2;
+                beardGroup.add(stache);
+            }
+            beardGroup.traverse(child => child.castShadow = true);
+            head.add(beardGroup);
+
+            // --- Helmet & Goggles ---
+            const helmetType = Math.floor(R(7) * 3);
+            const helmetGroup = new THREE.Group();
+            const helmetGeo = new THREE.SphereGeometry(0.38, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+            const helmet = new THREE.Mesh(helmetGeo, primaryMetalMat);
+            helmet.castShadow = true;
+            helmetGroup.add(helmet);
+
+            if(helmetType === 1){ // With Smokestack
+                const stackGeo = new THREE.CylinderGeometry(0.05, 0.07, 0.3, 8);
+                const stack = new THREE.Mesh(stackGeo, secondaryMetalMat);
+                stack.position.set(0.2, 0.2, 0);
+                stack.castShadow = true;
+                helmetGroup.add(stack);
+            } else if (helmetType === 2) { // With Pressure Gauge
+                const gaugeGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.05, 16);
+                const gauge = new THREE.Mesh(gaugeGeo, secondaryMetalMat);
+                gauge.position.set(-0.2, 0.1, 0.1);
+                gauge.rotation.z = Math.PI/4;
+                gauge.castShadow = true;
+                helmetGroup.add(gauge);
+            }
+            
+            // Goggles
+            if (R(8) > 0.3) {
+                const goggleGroup = new THREE.Group();
+                const lensColor = lensColors[Math.floor(R(9) * lensColors.length)];
+                const lensMat = new THREE.MeshStandardMaterial({ color: lensColor, roughness: 0.1, transparent: true, opacity: 0.6});
+                
+                const lensGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.08, 16);
+                const goggle1 = new THREE.Mesh(lensGeo, secondaryMetalMat);
+                const goggle2 = new THREE.Mesh(lensGeo, secondaryMetalMat);
+                goggle1.rotation.x = Math.PI / 2;
+                goggle2.rotation.x = Math.PI / 2;
+                goggle1.position.x = -0.15;
+                goggle2.position.x = 0.15;
+
+                const lens1 = new THREE.Mesh(new THREE.CircleGeometry(0.08, 16), lensMat);
+                const lens2 = new THREE.Mesh(new THREE.CircleGeometry(0.08, 16), lensMat);
+                lens1.position.z = 0.05;
+                lens2.position.z = 0.05;
+                goggle1.add(lens1);
+                goggle2.add(lens2);
+
+                const strapGeo = new THREE.BoxGeometry(0.05, 0.05, 0.2);
+                const strap = new THREE.Mesh(strapGeo, fabricMat);
+                
+                goggleGroup.add(goggle1, goggle2, strap);
+                goggleGroup.position.set(0, 0.1, 0.35);
+
+                if (R(10) > 0.5) { // Goggles on helmet
+                    goggleGroup.position.set(0, 0.2, 0);
+                    goggleGroup.scale.set(1.2, 1.2, 1.2);
+                    helmetGroup.add(goggleGroup);
+                } else { // Goggles on eyes
+                    head.add(goggleGroup);
+                }
+            }
+
+            head.add(helmetGroup);
+
+            // --- Tool ---
+            const toolType = Math.floor(R(11) * 3);
+            const toolGroup = new THREE.Group();
+            const handleGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.8, 8);
+            const handle = new THREE.Mesh(handleGeo, fabricMat);
+            handle.castShadow = true;
+            toolGroup.add(handle);
+
+            if (toolType === 0) { // Gear-Axe
+                const axeHeadGeo = new THREE.TorusGeometry(0.25, 0.08, 8, 6, Math.PI);
+                const axeHead = new THREE.Mesh(axeHeadGeo, primaryMetalMat);
+                axeHead.position.y = 0.3;
+                axeHead.rotation.z = Math.PI / 2;
+                axeHead.castShadow = true;
+                toolGroup.add(axeHead);
+            } else if (toolType === 1) { // Steam-Hammer
+                const hammerHeadGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+                const hammerHead = new THREE.Mesh(hammerHeadGeo, primaryMetalMat);
+                hammerHead.position.y = 0.3;
+                hammerHead.castShadow = true;
+                toolGroup.add(hammerHead);
+            } else { // Wrench
+                const wrenchHeadGeo = new THREE.BoxGeometry(0.3, 0.15, 0.1);
+                const wrenchHead = new THREE.Mesh(wrenchHeadGeo, primaryMetalMat);
+                wrenchHead.position.set(0.1, 0.35, 0);
+                wrenchHead.castShadow = true;
+                toolGroup.add(wrenchHead);
+            }
+            
+            toolGroup.position.set(0.6, 0.8, 0.1);
+            toolGroup.rotation.set(0.4, 0, -0.5);
+            toolGroup.scale.set(0.8, 0.8, 0.8);
+            group.add(toolGroup);
+
+            return group;
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
